@@ -19,3 +19,8 @@ body {
   background: var(--background);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+.row > div{
+    height: 40px;
+    width: 40px;
+}
