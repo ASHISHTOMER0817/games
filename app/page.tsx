@@ -1,13 +1,34 @@
-'use client'
+"use client";
 import { useState } from "react";
 
 export default function Home() {
-	const [playerA, setPlayerA] = useState<string[]>([]);
-	const [playerB, setPlayerB] = useState<string[]>([]);
+	const [playerA, setPlayerA] = useState<number[]>([]);
+	const [playerB, setPlayerB] = useState<number[]>([]);
 	const [turn, setTurn] = useState(true);
 	const [warning, setWarning] = useState(false);
+	
+	function checking(turns: number[]) {
+		console.log("running baby", turns);
+		const player: Set<number> = new Set([...turns]);
 
-	function myTurn(tileId: string) {
+		for (let i = 0; i < turns.length; i++) {
+			if (
+				(turns[i] &&
+					player.has(turns[i] + 1) &&
+					player.has(turns[i] + 2)) ||
+				(turns[i] &&
+					player.has(turns[i] + 11) &&
+					player.has(turns[i] + 22)) ||
+				(turns[i] &&
+					player.has(turns[i] + 9) &&
+					player.has(turns[i] + 18))
+			) {
+				return 1;
+			}
+		}
+	}
+
+	function myTurn(tileId: number) {
 		if (playerA.includes(tileId) || playerB.includes(tileId)) {
 			return setWarning(true);
 		}
@@ -15,12 +36,20 @@ export default function Home() {
 			setPlayerA([...playerA, tileId]);
 			setTurn(!turn);
 			setWarning(false);
+			console.log(playerA.length);
+			if (playerA.length >= 2 && checking([...playerA, tileId])) {
+				console.log("A won");
+			}
 		} else {
 			setPlayerB([...playerB, tileId]);
 			setTurn(!turn);
 			setWarning(false);
+			if (playerB.length >= 2 && checking([...playerB, tileId])) {
+				console.log("B won");
+			}
 		}
 	}
+	console.log("playerA-", playerA, "///", "playerB", playerB);
 
 	return (
 		<div className="h-screen flex flex-col items-center relative justify-center w-screen">
@@ -34,60 +63,78 @@ export default function Home() {
 			<div className="row flex">
 				<div
 					onClick={() => {
-						myTurn("1a");
+						myTurn(11);
 					}}
-					className=""
-				></div>
+					// className={`${}`}
+				>
+					11
+				</div>
 				<div
 					onClick={() => {
-						myTurn("1b");
+						myTurn(12);
 					}}
 					className="border border-t-0"
-				></div>
+				>
+					12
+				</div>
 				<div
 					onClick={() => {
-						myTurn("1c");
+						myTurn(13);
 					}}
-				></div>
+				>
+					13
+				</div>
 			</div>
 			<div className="row flex">
 				<div
 					onClick={() => {
-						myTurn("2a");
+						myTurn(21);
 					}}
 					className="border border-l-0"
-				></div>
+				>
+					21
+				</div>
 				<div
 					onClick={() => {
-						myTurn("2b");
+						myTurn(22);
 					}}
 					className=""
-				></div>
+				>
+					22
+				</div>
 				<div
 					onClick={() => {
-						myTurn("2c");
+						myTurn(23);
 					}}
 					className="border border-r-0"
-				></div>
+				>
+					23
+				</div>
 			</div>
 			<div className="row flex">
 				<div
 					onClick={() => {
-						myTurn("3a");
+						myTurn(31);
 					}}
 					className=""
-				></div>
+				>
+					31
+				</div>
 				<div
 					onClick={() => {
-						myTurn("3b");
+						myTurn(32);
 					}}
 					className="border border-b-0"
-				></div>
+				>
+					32
+				</div>
 				<div
 					onClick={() => {
-						myTurn("3c");
+						myTurn(33);
 					}}
-				></div>
+				>
+					33
+				</div>
 			</div>
 		</div>
 	);
