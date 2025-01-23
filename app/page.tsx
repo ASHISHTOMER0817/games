@@ -7,7 +7,7 @@ export default function Home() {
 
 	const games = [
 		{ name: "Tic Tac Toe", url: "/tic_tac_toe" },
-		{ name: "Ludo", url: "/snake_ladder" },
+		{ name: "Snake & Ladder", url: "/snake_ladder" },
 		{ name: "Space Invaders", url: "/space_invaders" },
 	];
 
