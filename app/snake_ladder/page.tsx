@@ -9,8 +9,8 @@ export default function SnakeAndLadder() {
 	const [count, setCount] = useState(0);
 
 	const [users, setUsers] = useState({
-		'a': {
-			movement: { x: 5, y: 0 },
+		a: {
+			movement: { x: -5, y: 0 },
 			points: 0,
 			steps: 0,
 			increment: "right",
@@ -19,8 +19,8 @@ export default function SnakeAndLadder() {
 			intensity: "normal",
 			// snake:{start:0, end:0}
 		},
-		'b': {
-			movement: { x: 5, y: 0 },
+		b: {
+			movement: { x: -5, y: 0 },
 			points: 0,
 			steps: 0,
 			increment: "right",
@@ -55,11 +55,11 @@ export default function SnakeAndLadder() {
 	useEffect(() => {
 		if (turn) setUser("a");
 		else setUser("b");
-		console.log("first");
+		// console.log("first");
 	}, [turn]);
 
 	useEffect(() => {
-		console.log("second");
+		// console.log("second");
 		setUsers((users) => ({
 			...users,
 			[user]: {
@@ -68,10 +68,10 @@ export default function SnakeAndLadder() {
 				steps: count,
 			},
 		}));
-	}, [count, user]);
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [user]);
 
 	useEffect(() => {
-		console.log("third", users?.[user].steps);
 		const increment = users?.[user].increment;
 		const progress = users?.[user].progress;
 		const steps = users?.[user].steps;
@@ -80,134 +80,250 @@ export default function SnakeAndLadder() {
 		const x_axis = users?.[user].movement.x;
 		const y_axis = users?.[user].movement.y;
 		const movement = users?.[user].movement;
-		const timeOut = intensity === 'normal' ? 400: 0
-		if (!steps) {
-			console.log("equal");
+		const timeOut = intensity === "normal" ? 300 : 0;
+		console.log(
+			"-------",
+
+			increment,
+			intensity,
+			progress,
+			user,
+			steps,
+			total,
+			y_axis,
+			movement,
+			"--------"
+		);
+
+		// console.log("this is timeout", timeOut);
+		if (!steps || (total + 1 === 99 && steps > 1)) {
+			console.log("close");
+
+			setUsers((users) => ({
+				...users,
+				[user]: {
+					...users?.[user],
+					intensity: "normal",
+					progress: "forward",
+					increment: progress === "backward" ? (increment === 'left' ? 'right':increment === 'right' ? 'left': increment): increment
+				},
+			}));
 			return;
 		}
-		console.log(
-			"and here we are ",
-			users?.[user].steps,
-			users?.[user].points
-		);
+		console
+			.log
+			// "and here we are ",
+			// users?.[user].steps,
+			// users?.[user].points
+			();
 
-		setTimeout(
-			() => {
-				console.log(
-					"movement count:",
-					users?.[user].movement.x
+		setTimeout(() => {
+			// console.log("movement count:", users?.[user].movement.x);
+
+			if (
+				x_axis === 5 &&
+				increment === "left" &&
+				progress === "forward"
+			) {
+				console.log("x:5,left,forward");
+				setUsers((users) => ({
+					...users,
+					[user]: {
+						...users?.[user],
+						movement: {
+							...movement,
+							y: y_axis + 10,
+						},
+						increment: "right",
+					},
+				}));
+			} else if (
+				x_axis === 95 &&
+				increment === "right" &&
+				progress === "forward"
+			) {
+				console.log("x:105,right,forward");
+
+				setUsers((users) => ({
+					...users,
+					[user]: {
+						...users?.[user],
+						movement: {
+							...movement,
+							y: y_axis + 10,
+						},
+						increment: "left",
+					},
+				}));
+			} else if (
+				x_axis === 95 &&
+				increment === "right" &&
+				progress === "backward"
+			) {
+				console.log("x:105,right,backward");
+
+				setUsers((users) => ({
+					...users,
+					[user]: {
+						...users?.[user],
+						movement: {
+							...movement,
+							y: y_axis - 10,
+						},
+						increment: "left",
+					},
+				}));
+			} else if (
+				x_axis === 5 &&
+				increment === "left" &&
+				progress === "backward"
+			) {
+				console.log("x:5,left,backward");
+
+				setUsers((users) => ({
+					...users,
+					[user]: {
+						...users?.[user],
+						movement: {
+							...movement,
+							y: y_axis - 10,
+						},
+						increment: "right",
+					},
+				}));
+			} else {
+				// console.log('normal condition')
+				setUsers((users) => ({
+					...users,
+					[user]: {
+						...users?.[user],
+						movement: {
+							...movement,
+							x:
+								increment === "left"
+									? x_axis - 10
+									: x_axis + 10,
+						},
+						// increment: 'right'
+					},
+				}));
+			}
+
+			// if (((increment === 'right' && x_axis === 105 && progress === 'forward') || (increment === 'left' && x_axis === 5 && progress === 'forward')) || ((increment === 'right' && x_axis === 5 && progress === "backward") || (increment === 'left' && x_axis === 105 && progress === 'backward')))  {
+			// 	let y_axisChange = 0;
+			// 	if (increment === "right") {
+			// 		y_axisChange = progress === "forward" ? 10 : -10;
+			// 	} else if (increment === "left") {
+			// 		y_axisChange = progress === "forward" ? -10 : 10;
+			// 	}
+
+			// 	setUsers((users) => ({
+			// 		...users,
+			// 		[user]: {
+			// 			...users?.[user],
+			// 			movement: {
+			// 				...movement,
+			// 				y: y_axis +y_axisChange,
+			// 			},
+			// 		},
+			// 	}));
+			// 	function increments(
+			// 		x_axis_turnPoint: number,
+			// 		whenTrue: string,
+			// 		whenFalse: string
+			// 	) {
+			// 		if (x_axis === x_axis_turnPoint)
+			// 			setUsers((users) => ({
+			// 				...users,
+			// 				[user]: {
+			// 					...users?.[user],
+			// 					increment:
+			// 						progress === "forward"
+			// 							? whenTrue
+			// 							: whenFalse,
+			// 				},
+			// 			}));
+			// 	}
+			// 	increments(105, "left", "right");
+			// 	increments(5, "right", "left");
+			// }
+			// else {
+			// 	console.log("this is else conition");
+
+			// 	const inc_x_axis =
+			// 		increment === "left"
+			// 			? progress === "forward"
+			// 				? -10
+			// 				: +10
+			// 			: progress === "forward"
+			// 			? +10
+			// 			: -10;
+			// 	setUsers((users) => ({
+			// 		...users,
+			// 		[user]: {
+			// 			...users?.[user],
+			// 			movement: {
+			// 				...movement,
+			// 				x: x_axis + inc_x_axis,
+			// 			},
+			// 		},
+			// 	}));
+			// }
+
+			function snake_ladder(
+				snakeOrLadder: { start: number; end: number }[],
+				whichOne: string
+			) {
+				const snake_ladder = snakeOrLadder.find(
+					(obj) => obj.start === total + 1
 				);
-				// if (
-				// 	(x_axis === 95 && increment === "right") ||
-				// 	(x_axis === 5 && increment === "left")
-				// ) {
-				// 	setUsers((users) => ({
-				// 		...users,
-				// 		[user]: {
-				// 			...users?.[user],
-				// 			movement: {
-				// 				...movement,
-				// 				y:
-				// 					progress === "forward"
-				// 						? y_axis + 10
-				// 						: y_axis - 10,
-				// 			},
-				// 		},
-				// 	}));
+				console.log("good boy", snake_ladder);
+				if (snake_ladder) {
+					const start = snake_ladder.start;
+					const end = snake_ladder.end;
+					// if(increment !== 'ladder')
+					setUsers((users) => ({
+						...users,
+						[user]: {
+							...users?.[user],
+							steps:
+								whichOne === "ladder"
+									? end - start
+									: start - end,
+							progress:
+								whichOne !== "ladder"
+									? "backward"
+									: "forward",
+							intensity: "speedy",
+							increment: whichOne !== "ladder" ? (increment === 'left' ? 'right':increment === 'right' ? 'left': increment): increment
+						},
+					}));
+				}
+			}
 
-				// 	function increments(x_axis_turnPoint:number, whenTrue:string, whenFalse:string){
-				// 		if (x_axis === x_axis_turnPoint)
-				// 			setUsers((users) => ({
-				// 				...users,
-				// 				[user]: {
-				// 					...users?.[user],
-				// 					increment:
-				// 						progress === "forward"
-				// 							? whenTrue
-				// 							: whenFalse,
-				// 				},
-				// 			}));
+			if (steps === 0 && intensity !== "normal") {
+				console.log("why??");
+			}
 
-				// 	}
-				// 	increments(95, 'left', 'right')
-				// 	increments(5, 'right', 'left')
-				
-				// }
-		//  else {
-		// 			console.log("this is else conition");
+			setUsers((users) => ({
+				...users,
+				[user]: {
+					...users?.[user],
+					steps: steps - 1,
+					total:
+						progress === "forward"
+							? total + 1
+							: total - 1,
+				},
+			}));
 
-		// 			setUsers((users) => ({
-		// 				...users,
-		// 				[user]: {
-		// 					...users?.[user],
-		// 					movement: {
-		// 						...movement,
-		// 						x:
-		// 							increment === "left"
-		// 								? x_axis +
-		// 										progress ===
-		// 								  "forward"
-		// 									? -10
-		// 									: +10
-		// 								: x_axis +
-		// 										progress ===
-		// 								  "forward"
-		// 								? +10
-		// 								: -10,
-		// 					},
-		// 				},
-		// 			}));
-		// 		}
+			if (intensity === "normal" && steps - 1 === 0) {
+				snake_ladder(snakeArr, "snake");
+				snake_ladder(ladderArr, "ladder");
+			}
 
-		// 		setUsers((users) => ({
-		// 			...users,
-		// 			[user]: {
-		// 				...users?.[user],
-		// 				steps: steps - 1,
-		// 				total:
-		// 					progress === "forward"
-		// 						? total + 1
-		// 						: total - 1,
-		// 			},
-		// 		}));
-
-		// 		function snake_ladder(
-		// 			snakeOrLadder: { start: number; end: number }[],
-		// 			whichOne: string
-		// 		) {
-		// 			const snake_ladder = snakeOrLadder.find(
-		// 				(obj) => obj.start === total + 1
-		// 			);
-		// 			if (snake_ladder) {
-		// 				const start = snake_ladder.start;
-		// 				const end = snake_ladder.end;
-		// 				setUsers((users) => ({
-		// 					...users,
-		// 					[user]: {
-		// 						...users?.[user],
-		// 						steps:
-		// 							steps +
-		// 							(whichOne === "ladder"
-		// 								? end - start
-		// 								: start - end),
-		// 						progress:
-		// 							whichOne !== "ladder"
-		// 								? "backward"
-		// 								: users?.[user]
-		// 										.progress,
-		// 						intensity: "speedy",
-		// 					},
-		// 				}));
-		// 			}
-		// 		}
-
-		// 		snake_ladder(snakeArr, "snake");
-		// 		snake_ladder(ladderArr, "ladder");
-
-		// 		if (total + 1 === 100) console.log("A won");
-			},
-			timeOut
-		);
+			if (total + 1 === 100) console.log("A won");
+		}, timeOut);
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [users?.[user].steps]);
 
@@ -216,7 +332,7 @@ export default function SnakeAndLadder() {
 			<div className="h-screen flex p-5 justify-evenly">
 				<div className="self-center text-center">
 					<div className="text-[40px]">Player A </div>
-					<div className="text-[340px]">
+					<div className={`text-[340px] ${user !== "a" ? 'text-pink-500': 'text-gray-500'}`}>
 						{users.a.points}{" "}
 					</div>
 				</div>
@@ -237,10 +353,10 @@ export default function SnakeAndLadder() {
 					<div
 						style={{
 							left: `${String(
-								users?.[user].movement.x
+								users?.a.movement.x
 							)}%`,
 							bottom: `${String(
-								users?.[user].movement.y
+								users?.a.movement.y
 							)}%`,
 						}}
 						className={`absolute -translate-y-2/4 -translate-x-2/4 transition-all duration-200 z-20 bg-pink-500 w-[5%] h-[5%] rounded-full`}
@@ -263,7 +379,7 @@ export default function SnakeAndLadder() {
 
 				<div className="self-center text-center">
 					<div className="text-[40px]">Player B </div>
-					<div className="text-[340px]">
+					<div className={`text-[340px] ${user !== "b" ? 'text-blue-500': 'text-gray-500'}`}>
 						{users.b.points}{" "}
 					</div>
 				</div>
@@ -274,7 +390,6 @@ export default function SnakeAndLadder() {
 				onClick={() => {
 					setTurn(!turn);
 					setCount(Math.floor(Math.random() * 6) + 1);
-
 				}}
 			>
 				Roll Dice
