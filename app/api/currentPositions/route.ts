@@ -1,10 +1,12 @@
-// import { NextResponse, NextRequest } from "next/server";
-// import { Server } from "socket.io";
-// export function GET(){
+import { NextResponse, NextRequest } from "next/server";
+import { Server } from "socket.io";
 
-//       try{
-//             const io = new Server()
-//             io.on("connection")
-//             mongoose
-//       }
-// }
+
+export function GET(){
+
+      // try{
+      //       const io = new Server()
+      //       io.on("connection", (socket)=>{})
+      //       // mongoose
+      // }
+}

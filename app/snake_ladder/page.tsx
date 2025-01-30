@@ -3,13 +3,15 @@ import { useEffect, useState } from "react";
 // import R from "../R.jpeg"\
 // import { io } from "socket.io-client";
 import Image from "next/image";
+// import { io } from "socket.io-client";
+import writeUserData from "../components/writeUserData";
 export default function SnakeAndLadder() {
 	const [user, setUser] = useState<"a" | "b">("a");
 	const [turn, setTurn] = useState<boolean>(true);
 	const [count, setCount] = useState(0);
-
+	// const socket = io();
 	const [users, setUsers] = useState({
-		a: {
+		a: {	
 			movement: { x: -5, y: 0 },
 			points: 0,
 			steps: 0,
@@ -81,6 +83,7 @@ export default function SnakeAndLadder() {
 		const y_axis = users?.[user].movement.y;
 		const movement = users?.[user].movement;
 		const timeOut = intensity === "normal" ? 300 : 0;
+
 		console.log(
 			"-------",
 
@@ -105,7 +108,14 @@ export default function SnakeAndLadder() {
 					...users?.[user],
 					intensity: "normal",
 					progress: "forward",
-					increment: progress === "backward" ? (increment === 'left' ? 'right':increment === 'right' ? 'left': increment): increment
+					increment:
+						progress === "backward"
+							? increment === "left"
+								? "right"
+								: increment === "right"
+								? "left"
+								: increment
+							: increment,
 				},
 			}));
 			return;
@@ -209,67 +219,6 @@ export default function SnakeAndLadder() {
 				}));
 			}
 
-			// if (((increment === 'right' && x_axis === 105 && progress === 'forward') || (increment === 'left' && x_axis === 5 && progress === 'forward')) || ((increment === 'right' && x_axis === 5 && progress === "backward") || (increment === 'left' && x_axis === 105 && progress === 'backward')))  {
-			// 	let y_axisChange = 0;
-			// 	if (increment === "right") {
-			// 		y_axisChange = progress === "forward" ? 10 : -10;
-			// 	} else if (increment === "left") {
-			// 		y_axisChange = progress === "forward" ? -10 : 10;
-			// 	}
-
-			// 	setUsers((users) => ({
-			// 		...users,
-			// 		[user]: {
-			// 			...users?.[user],
-			// 			movement: {
-			// 				...movement,
-			// 				y: y_axis +y_axisChange,
-			// 			},
-			// 		},
-			// 	}));
-			// 	function increments(
-			// 		x_axis_turnPoint: number,
-			// 		whenTrue: string,
-			// 		whenFalse: string
-			// 	) {
-			// 		if (x_axis === x_axis_turnPoint)
-			// 			setUsers((users) => ({
-			// 				...users,
-			// 				[user]: {
-			// 					...users?.[user],
-			// 					increment:
-			// 						progress === "forward"
-			// 							? whenTrue
-			// 							: whenFalse,
-			// 				},
-			// 			}));
-			// 	}
-			// 	increments(105, "left", "right");
-			// 	increments(5, "right", "left");
-			// }
-			// else {
-			// 	console.log("this is else conition");
-
-			// 	const inc_x_axis =
-			// 		increment === "left"
-			// 			? progress === "forward"
-			// 				? -10
-			// 				: +10
-			// 			: progress === "forward"
-			// 			? +10
-			// 			: -10;
-			// 	setUsers((users) => ({
-			// 		...users,
-			// 		[user]: {
-			// 			...users?.[user],
-			// 			movement: {
-			// 				...movement,
-			// 				x: x_axis + inc_x_axis,
-			// 			},
-			// 		},
-			// 	}));
-			// }
-
 			function snake_ladder(
 				snakeOrLadder: { start: number; end: number }[],
 				whichOne: string
@@ -295,7 +244,15 @@ export default function SnakeAndLadder() {
 									? "backward"
 									: "forward",
 							intensity: "speedy",
-							increment: whichOne !== "ladder" ? (increment === 'left' ? 'right':increment === 'right' ? 'left': increment): increment
+							increment:
+								whichOne !== "ladder"
+									? increment === "left"
+										? "right"
+										: increment ===
+										  "right"
+										? "left"
+										: increment
+									: increment,
 						},
 					}));
 				}
@@ -323,7 +280,20 @@ export default function SnakeAndLadder() {
 			}
 
 			if (total + 1 === 100) console.log("A won");
+			// socket.emit('message', total)
 		}, timeOut);
+
+		writeUserData(
+			userId,
+			increment,
+			progress,
+			steps,
+			intensity,
+			total,
+			x_axis,
+			y_axis,
+			timeOut
+		);
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [users?.[user].steps]);
 
@@ -332,7 +302,13 @@ export default function SnakeAndLadder() {
 			<div className="h-screen flex p-5 justify-evenly">
 				<div className="self-center text-center">
 					<div className="text-[40px]">Player A </div>
-					<div className={`text-[340px] ${user !== "a" ? 'text-pink-500': 'text-gray-500'}`}>
+					<div
+						className={`text-[340px] ${
+							user !== "a"
+								? "text-pink-500"
+								: "text-gray-500"
+						}`}
+					>
 						{users.a.points}{" "}
 					</div>
 				</div>
@@ -379,7 +355,13 @@ export default function SnakeAndLadder() {
 
 				<div className="self-center text-center">
 					<div className="text-[40px]">Player B </div>
-					<div className={`text-[340px] ${user !== "b" ? 'text-blue-500': 'text-gray-500'}`}>
+					<div
+						className={`text-[340px] ${
+							user !== "b"
+								? "text-blue-500"
+								: "text-gray-500"
+						}`}
+					>
 						{users.b.points}{" "}
 					</div>
 				</div>
