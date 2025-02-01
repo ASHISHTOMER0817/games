@@ -1,7 +1,9 @@
-import { getDatabase, ref, set } from "firebase/database";
+import { getDatabase, ref, update } from "firebase/database";
+
 
 export default function writeUserData(
-	userId: string,
+	userId:string,
+	gameId: string,
 	increment: string,
 	progress: string,
 	steps: number,
@@ -9,11 +11,14 @@ export default function writeUserData(
 	total: number,
 	x_axis: number,
 	y_axis: number,
-	timeOut: number
+	timeOut: number,
+	opponentId?: string,
 ) {
+
 	const db = getDatabase();
-	set(ref(db, "users/" + userId), {
-		_id: userId,
+	const userRef = ref(db, `users/${gameId}/`)
+	update(userRef,{[userId]: {
+		// _id: userId,
 		increment: increment,
 		progress: progress,
 		steps: steps,
@@ -22,5 +27,18 @@ export default function writeUserData(
 		x_axis: x_axis,
 		y_axis: y_axis,
 		timeOut: timeOut,
-	});
+		turn:false 
+	}});
+	if(opponentId){
+		update(userRef, {
+			
+				opponentId:{
+					turn: true
+				}
+			
+		})
+	}
 }
+
+
+ 

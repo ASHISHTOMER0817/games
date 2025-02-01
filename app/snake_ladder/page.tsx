@@ -1,17 +1,25 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 // import R from "../R.jpeg"\
 // import { io } from "socket.io-client";
 import Image from "next/image";
 // import { io } from "socket.io-client";
 import writeUserData from "../components/writeUserData";
+import { onValue, ref } from "firebase/database";
+import database from "@/database/firebase";
 export default function SnakeAndLadder() {
 	const [user, setUser] = useState<"a" | "b">("a");
-	const [turn, setTurn] = useState<boolean>(true);
+	const [turn, setTurn] = useState<boolean>();
 	const [count, setCount] = useState(0);
+	// const [userId, setUserId] = useState<string>('')
+	const {gameId, id} = useRef(JSON.parse(
+		sessionStorage.getItem("player") ??
+			JSON.stringify({ gameId: "", id: "" })
+	)).current;
+	
 	// const socket = io();
 	const [users, setUsers] = useState({
-		a: {	
+		a: {
 			movement: { x: -5, y: 0 },
 			points: 0,
 			steps: 0,
@@ -54,11 +62,57 @@ export default function SnakeAndLadder() {
 		{ start: 80, end: 99 },
 	];
 
+	// Get player id
 	useEffect(() => {
-		if (turn) setUser("a");
-		else setUser("b");
-		// console.log("first");
-	}, [turn]);
+		setPlayer(
+			JSON.parse(
+				sessionStorage.getItem("player") ??
+					JSON.stringify({ gameId: "", id: "" })
+			)
+		);
+	}, []);
+
+	useEffect(() => {
+		// Keep checking for secondKey
+		// const player = JSON.parse(sessionStorage.getItem("player") ?? "");
+		// if (!player) return;
+		onValue(ref(database, `users/${current.gameId}`), (snapshot) => {
+			const data = snapshot.val();
+			if (data?.[current.id]) {
+				setTurn(data?.[current.id].turn);
+			}
+		});
+	}, []);
+
+	useEffect(() => {
+		onValue(ref(database, `users/${current.gameId}`), (snapshot) => {
+			let id = "";
+			if (current.id === "firstKey") {
+				id = "secondKey";
+			} else id = "firstKey";
+			const data = snapshot.val()?.[id];
+			setUsers((users) => ({
+				...users,
+				b: {
+					increment: data?.increment,
+					intensity: data?.intensity,
+					movement: {
+						x: data?.movement.x,
+						y: data?.movement.y,
+					},
+					points: data?.points,
+					progress: data?.progress,
+					steps: data?.steps,
+					total: data?.total,
+				},
+			}));
+		});
+	}, []);
+
+	// useEffect(() => {
+	// 	if (turn) setUser("a");
+	// 	else setUser("b");
+	// }, [turn]);
 
 	useEffect(() => {
 		// console.log("second");
@@ -118,14 +172,31 @@ export default function SnakeAndLadder() {
 							: increment,
 				},
 			}));
+
+			// Change the user after each successful turn
+			if (user === "a") setUser("b");
+			else setUser("a");
+			writeUserData(
+				player.id === "firstKey" ? "secondKey" : "firstKey",
+				player.gameId,
+				increment,
+				progress,
+				steps,
+				intensity,
+				total,
+				x_axis,
+				y_axis,
+				timeOut
+			);
+
 			return;
 		}
-		console
-			.log
-			// "and here we are ",
-			// users?.[user].steps,
-			// users?.[user].points
-			();
+		// console
+		// 	.log(
+		// 	"and here we are ",
+		// 	users?.[user].steps,
+		// 	users?.[user].points
+		// 	);
 
 		setTimeout(() => {
 			// console.log("movement count:", users?.[user].movement.x);
@@ -284,7 +355,8 @@ export default function SnakeAndLadder() {
 		}, timeOut);
 
 		writeUserData(
-			userId,
+			player.gameId,
+			player.id,
 			increment,
 			progress,
 			steps,

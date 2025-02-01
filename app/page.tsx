@@ -89,9 +89,15 @@ export default function Home() {
 						);
 						console.log(
 							"secondKey data set successfully!"
-						); 
-
-						router.push(`game/${key}`);
+						);
+						sessionStorage.setItem(
+							"player",
+							JSON.stringify({
+								gameId: key,
+								id: "secondKey",
+							})
+						);
+						router.push(`${url}/${key}`);
 						return;
 					}
 				}
@@ -112,10 +118,14 @@ export default function Home() {
 						progress: "forward",
 						intensity: "normal",
 						gamestage: "start",
-						turn: false,
+						turn: true,
 					},
 					secondKey: "",
 				});
+				sessionStorage.setItem(
+					"player",
+					JSON.stringify({ gameId, id: "firstKey" })
+				);
 
 				console.log("firstKey and secondKey set successfully!");
 
@@ -124,7 +134,7 @@ export default function Home() {
 					const data = snapshot.val();
 					if (data?.secondKey) {
 						setSuspense(false);
-						router.push(`/game/${gameId}`); // Redirect both players
+						router.push(`${url}/${gameId}`); // Redirect both players
 					}
 				});
 
@@ -202,7 +212,12 @@ export default function Home() {
 	];
 
 	return (
-		<div className="flex justify-center items-center h-screen bg-gray-900">
+		<div className="flex justify-center relative items-center h-screen bg-gray-900">
+			{suspense && (
+				<div className="absolute w-100 h-100 bg-gray-500 opacity-50 text-white text-center grid place-items-center">
+					Loading...
+				</div>
+			)}
 			<div className="bg-gray-800 p-10 rounded-lg shadow-lg text-white w-80">
 				<h1 className="text-2xl font-bold text-center mb-6">
 					Choose a Game
