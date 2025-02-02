@@ -11,7 +11,7 @@ export default function writeUserData(
 	total: number,
 	x_axis: number,
 	y_axis: number,
-	timeOut: number,
+	// timeOut: number,
 	opponentId?: string,
 ) {
 
@@ -24,18 +24,18 @@ export default function writeUserData(
 		steps: steps,
 		intensity: intensity,
 		total: total,
-		x_axis: x_axis,
-		y_axis: y_axis,
-		timeOut: timeOut,
+		movement:{
+			x:x_axis,
+			y:y_axis,
+		},
+		// x_axis: x_axis,
+		// y_axis: y_axis,
+		// timeOut: timeOut,
 		turn:false 
 	}});
 	if(opponentId){
-		update(userRef, {
-			
-				opponentId:{
+		update(ref(db,`users/${gameId}/${opponentId}`), {
 					turn: true
-				}
-			
 		})
 	}
 }
