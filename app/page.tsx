@@ -195,10 +195,12 @@ export default function Home() {
 
             console.log("secondKey data set successfully!");
 
-            sessionStorage.setItem(
-              "player",
-              JSON.stringify({ gameId: key, id: "secondKey" })
-            );
+         if(typeof window !== undefined){
+          sessionStorage.setItem(
+            "player",
+            JSON.stringify({ gameId: key, id: "secondKey" })
+          );
+         }   
             router.push(url);
             return;
           }
@@ -222,10 +224,12 @@ export default function Home() {
           secondKey: "",
         });
 
+      if(typeof window !== undefined){
         sessionStorage.setItem(
           "player",
           JSON.stringify({ gameId: newGameId, id: "firstKey" })
         );
+      }  
 
         console.log("firstKey and secondKey set successfully!");
         setSuspense(true);

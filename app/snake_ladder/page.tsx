@@ -13,12 +13,27 @@ export default function SnakeAndLadder() {
 	// const [user, setUser] = useState<"a" | "b">("a");
 	const [turn, setTurn] = useState<boolean>(false);
 	const [gameProgress, setGameProgress] = useState("start");
-	const { gameId, id } = useRef(
-		JSON.parse(
-			sessionStorage.getItem("player") ??
-				JSON.stringify({ gameId: "", id: "" })
-		)
-	).current;
+	// const { gameId, id } = useRef(
+	// 	JSON.parse(
+	// 		sessionStorage.getItem("player") ??
+	// 			JSON.stringify({ gameId: "", id: "" })
+	// 	)
+	// ).current;
+
+	const [playerData, setPlayerData] = useState({ gameId: "", id: "" });
+  const playerRef = useRef(playerData); // Use useRef to persist state across renders
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const storedPlayer = sessionStorage.getItem("player");
+      const parsedPlayer = storedPlayer ? JSON.parse(storedPlayer) : { gameId: "", id: "" };
+
+      setPlayerData(parsedPlayer);
+      playerRef.current = parsedPlayer; // Update the ref after state is set
+    }
+  }, []);
+
+  const { gameId, id } = playerData; // Destructure after state is updated
 
 	const snakeArr = [
 		{ start: 17, end: 7 },
