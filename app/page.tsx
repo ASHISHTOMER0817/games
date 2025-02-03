@@ -199,7 +199,7 @@ export default function Home() {
               "player",
               JSON.stringify({ gameId: key, id: "secondKey" })
             );
-            // router.push(url);
+            router.push(url);
             return;
           }
         }
@@ -245,7 +245,7 @@ export default function Home() {
       const data = snapshot.val();
       if (data && typeof data === "object") {
         setSuspense(false);
-      //   router.push(`/snake_ladder`);
+        router.push(`/snake_ladder`);
       }
     });
 
