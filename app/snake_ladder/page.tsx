@@ -9,7 +9,7 @@ import { off, onValue, ref, update } from "firebase/database";
 import database from "@/database/firebase";
 import { PointDisplay, Pieces } from "../components/pieces";
 export default function SnakeAndLadder() {
-	const [user, setUser] = useState<"a" | "b">("a");
+	// const [user, setUser] = useState<"a" | "b">("a");
 	const [turn, setTurn] = useState<boolean>(false);
 	const [gameProgress, setGameProgress] = useState("start");
 	const { gameId, id } = useRef(
@@ -104,14 +104,14 @@ export default function SnakeAndLadder() {
 	}, [gameId, id]);
 
 	useEffect(() => {
-		const increment = users?.[user].increment;
-		const progress = users?.[user].progress;
-		const steps = users?.[user].steps;
-		const intensity = users?.[user].intensity;
-		const total = users?.[user].total;
-		const x_axis = users?.[user].movement.x;
-		const y_axis = users?.[user].movement.y;
-		const movement = users?.[user].movement;
+		const increment = users?.a.increment;
+		const progress = users?.a.progress;
+		const steps = users?.a.steps;
+		const intensity = users?.a.intensity;
+		const total = users?.a.total;
+		const x_axis = users?.a.movement.x;
+		const y_axis = users?.a.movement.y;
+		const movement = users?.a.movement;
 		const timeOut = intensity === "normal" ? 300 : 0;
 
 		if (!steps || (total + 1 === 99 && steps > 1)) {
@@ -119,8 +119,8 @@ export default function SnakeAndLadder() {
 
 			setUsers((users) => ({
 				...users,
-				[user]: {
-					...users?.[user],
+				a: {
+					...users?.a,
 					intensity: "normal",
 					progress: "forward",
 					increment:
@@ -138,7 +138,7 @@ export default function SnakeAndLadder() {
 		}
 
 		setTimeout(() => {
-			// console.log("movement count:", users?.[user].movement.x);
+			// console.log("movement count:", users?.a.movement.x);
 
 			if (
 				x_axis === 5 &&
@@ -148,8 +148,8 @@ export default function SnakeAndLadder() {
 				console.log("x:5,left,forward");
 				setUsers((users) => ({
 					...users,
-					[user]: {
-						...users?.[user],
+					a: {
+						...users?.a,
 						movement: {
 							...movement,
 							y: y_axis + 10,
@@ -166,8 +166,8 @@ export default function SnakeAndLadder() {
 
 				setUsers((users) => ({
 					...users,
-					[user]: {
-						...users?.[user],
+					a: {
+						...users?.a,
 						movement: {
 							...movement,
 							y: y_axis + 10,
@@ -184,8 +184,8 @@ export default function SnakeAndLadder() {
 
 				setUsers((users) => ({
 					...users,
-					[user]: {
-						...users?.[user],
+					a: {
+						...users?.a,
 						movement: {
 							...movement,
 							y: y_axis - 10,
@@ -202,8 +202,8 @@ export default function SnakeAndLadder() {
 
 				setUsers((users) => ({
 					...users,
-					[user]: {
-						...users?.[user],
+					a: {
+						...users?.a,
 						movement: {
 							...movement,
 							y: y_axis - 10,
@@ -215,8 +215,8 @@ export default function SnakeAndLadder() {
 				// console.log('normal condition')
 				setUsers((users) => ({
 					...users,
-					[user]: {
-						...users?.[user],
+					a: {
+						...users?.a,
 						movement: {
 							...movement,
 							x:
@@ -243,8 +243,8 @@ export default function SnakeAndLadder() {
 					// if(increment !== 'ladder')
 					setUsers((users) => ({
 						...users,
-						[user]: {
-							...users?.[user],
+						a: {
+							...users?.a,
 							steps:
 								whichOne === "ladder"
 									? end - start
@@ -274,8 +274,8 @@ export default function SnakeAndLadder() {
 
 			setUsers((users) => ({
 				...users,
-				[user]: {
-					...users?.[user],
+				a: {
+					...users?.a,
 					steps: steps - 1,
 					total:
 						progress === "forward"
@@ -295,7 +295,7 @@ export default function SnakeAndLadder() {
 		}, timeOut);
 
 		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [users?.[user].steps]);
+	}, [users?.a.steps]);
 
 	useEffect(() => {
 		if (!id || !gameId) return;
