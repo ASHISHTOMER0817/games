@@ -80,12 +80,13 @@ export default function SnakeAndLadder() {
 	useEffect(() => {
 		onValue(ref(database, `users/${gameId}/${id}`), (snapshot) => {
 			const data = snapshot.val();
+			console.log('dt: ', data);
 			if (data) {
 				setTurn(data?.turn);
 				setGameProgress('start')
 			}
 		});
-	}, [gameId, id]);
+	});
 
 	useEffect(() => {
 		if (!gameId || !id) return;
