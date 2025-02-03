@@ -8,6 +8,7 @@ import Image from "next/image";
 import { off, onValue, ref, update } from "firebase/database";
 import database from "@/database/firebase";
 import { PointDisplay, Pieces } from "../components/pieces";
+
 export default function SnakeAndLadder() {
 	// const [user, setUser] = useState<"a" | "b">("a");
 	const [turn, setTurn] = useState<boolean>(false);
