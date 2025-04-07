@@ -1,39 +1,27 @@
 "use client";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 // import R from "../R.jpeg"\
 // import { io } from "socket.io-client";
 import Image from "next/image";
 // import { io } from "socket.io-client";
 // import writeUserData from "../components/writeUserData";
-import { off, onValue, ref, update } from "firebase/database";
+import { onValue, ref, update } from "firebase/database";
 import database from "@/database/firebase";
 import { PointDisplay, Pieces } from "../components/pieces";
+import {img} from "../lib/variables";
+import { Timestamp } from "firebase/firestore";
 
 export default function SnakeAndLadder() {
-	// const [user, setUser] = useState<"a" | "b">("a");
+	const [user, setUser] = useState<"a" | "b">("a");
 	const [turn, setTurn] = useState<boolean>(false);
-	const [gameProgress, setGameProgress] = useState("start");
-	// const { gameId, id } = useRef(
-	// 	JSON.parse(
-	// 		sessionStorage.getItem("player") ??
-	// 			JSON.stringify({ gameId: "", id: "" })
-	// 	)
-	// ).current;
-
-	const [playerData, setPlayerData] = useState({ gameId: "", id: "" });
-  const playerRef = useRef(playerData); // Use useRef to persist state across renders
-
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      const storedPlayer = sessionStorage.getItem("player");
-      const parsedPlayer = storedPlayer ? JSON.parse(storedPlayer) : { gameId: "", id: "" };
-
-      setPlayerData(parsedPlayer);
-      playerRef.current = parsedPlayer; // Update the ref after state is set
-    }
-  }, []);
-
-  const { gameId, id } = playerData; // Destructure after state is updated
+	const [movesProgress, setmovesProgress] = useState("end");
+	const [user_id, setUserId] = useState('')
+	const [opponent_id, setOpponent_id] = useState('')
+	const [temp_hold_of_turn_changes_in_middle_of_game, setTemp_hold_of_turn_changes_in_middle_of_game] = useState(false)
+	useEffect(()=>{
+		setUserId(localStorage.getItem('user_id') || '')
+		setOpponent_id(localStorage.getItem('opponent_id') || '')
+	},[])
 
 	const snakeArr = [
 		{ start: 17, end: 7 },
@@ -77,302 +65,299 @@ export default function SnakeAndLadder() {
 		},
 	});
 
+
+	// Check user's turn and toggle based on it
 	useEffect(() => {
-		onValue(ref(database, `users/${gameId}/${id}`), (snapshot) => {
-			const data = snapshot.val();
-			console.log('dt: ', data);
-			if (data) {
-				setTurn(data?.turn);
-				setGameProgress('start')
+		onValue(ref(database, `players/${user_id}`), (snapshot) => {
+			if (snapshot.exists() && snapshot.val().turn == true) {
+				console.log('1st-> check turn')
+				setTemp_hold_of_turn_changes_in_middle_of_game(snapshot.val().turn);
+				setUser('a');
 			}
 		});
-	});
+	},[user_id]);
 
-	useEffect(() => {
-		if (!gameId || !id) return;
+	// Updating opponent moves in the UI by fetching the latest data from backend
+	useEffect(()=>{
+		onValue(ref(database, `/players/${opponent_id}`), (snapshot)=>{
+			if(snapshot.exists() && !turn && snapshot.val().steps > 0){
+				const prgrs_or_intens = snapshot.val().progressOrIntensity
+				let intensity, progress;
+				
+				switch(prgrs_or_intens){
+					case 'jump_forward':
+						intensity = 'fast';
+						progress = 'forward';
+					 	break;
+					case 'jump_backward':
+						intensity = 'fast';
+						progress = 'backward';
+						break;
+					default: break;
+				}
 
-		const opponentKey = id === "firstKey" ? "secondKey" : "firstKey";
-		const userRef = ref(database, `users/${gameId}/${opponentKey}`);
+				// We are seeting B as user because it is B's turn
+				setUser("b");
 
-		onValue(userRef, (snapshot) => {
-			const data = snapshot.val();
-			console.log("Opponent Data:", data);
-
-			if (data) {
-				setUsers((prevUsers) => ({
-					...prevUsers,
-					b: {
-						increment: data.increment,
-						intensity: data.intensity,
-						movement: {
-							x: data.movement?.x || 0,
-							y: data.movement?.y || 0,
-						},
-						points: data.points || 0,
-						progress: data.progress || "forward",
-						steps: data.steps || 0,
-						total: data.total || 0,
-					},
-				}));
+				// We are getting progress report of B
+				setUsers({
+					...users,
+					b:{
+						...users.b,
+						steps:snapshot.val().steps,
+						intensity:intensity || users.b.intensity,
+						progress: progress || users.b.progress
+					}
+				})
+				console.log('1st->OPPONENT_CONSOLE:-change in opponent')
+				
 			}
-		});
-
-		return () => off(userRef);
-	}, [gameId, id]);
+		})
+	},[opponent_id, turn, users])
 
 	useEffect(() => {
-		const increment = users?.a.increment;
-		const progress = users?.a.progress;
-		const steps = users?.a.steps;
-		const intensity = users?.a.intensity;
-		const total = users?.a.total;
-		const x_axis = users?.a.movement.x;
-		const y_axis = users?.a.movement.y;
-		const movement = users?.a.movement;
+		// console.log('3rd-> checking the biggest one')
+		// Creating interface-like variables to not right common keywords again.
+		const increment = users?.[user].increment;
+		const progress = users?.[user].progress;
+		const steps = users?.[user].steps;
+		const intensity = users?.[user].intensity;
+		const total = users?.[user].total;
+		const x_axis = users?.[user].movement.x;
+		const y_axis = users?.[user].movement.y;
+		const movement = users?.[user].movement;
 		const timeOut = intensity === "normal" ? 300 : 0;
 
-		if (!steps || (total + 1 === 99 && steps > 1)) {
-			console.log("close");
-
-			setUsers((users) => ({
-				...users,
-				a: {
-					...users?.a,
-					intensity: "normal",
-					progress: "forward",
-					increment:
-						progress === "backward"
-							? increment === "left"
-								? "right"
-								: increment === "right"
-								? "left"
-								: increment
-							: increment,
-				},
-			}));
-
-			return;
-		}
-
-		setTimeout(() => {
-			// console.log("movement count:", users?.a.movement.x);
-
-			if (
-				x_axis === 5 &&
-				increment === "left" &&
-				progress === "forward"
-			) {
-				console.log("x:5,left,forward");
-				setUsers((users) => ({
-					...users,
-					a: {
-						...users?.a,
-						movement: {
-							...movement,
-							y: y_axis + 10,
-						},
-						increment: "right",
-					},
-				}));
-			} else if (
-				x_axis === 95 &&
-				increment === "right" &&
-				progress === "forward"
-			) {
-				console.log("x:105,right,forward");
-
-				setUsers((users) => ({
-					...users,
-					a: {
-						...users?.a,
-						movement: {
-							...movement,
-							y: y_axis + 10,
-						},
-						increment: "left",
-					},
-				}));
-			} else if (
-				x_axis === 95 &&
-				increment === "right" &&
-				progress === "backward"
-			) {
-				console.log("x:105,right,backward");
-
-				setUsers((users) => ({
-					...users,
-					a: {
-						...users?.a,
-						movement: {
-							...movement,
-							y: y_axis - 10,
-						},
-						increment: "left",
-					},
-				}));
-			} else if (
-				x_axis === 5 &&
-				increment === "left" &&
-				progress === "backward"
-			) {
-				console.log("x:5,left,backward");
-
-				setUsers((users) => ({
-					...users,
-					a: {
-						...users?.a,
-						movement: {
-							...movement,
-							y: y_axis - 10,
-						},
-						increment: "right",
-					},
-				}));
-			} else {
-				// console.log('normal condition')
-				setUsers((users) => ({
-					...users,
-					a: {
-						...users?.a,
-						movement: {
-							...movement,
-							x:
-								increment === "left"
-									? x_axis - 10
-									: x_axis + 10,
-						},
-						// increment: 'right'
-					},
-				}));
-			}
-
-			function snake_ladder(
-				snakeOrLadder: { start: number; end: number }[],
-				whichOne: string
-			) {
-				const snake_ladder = snakeOrLadder.find(
-					(obj) => obj.start === total + 1
-				);
-				console.log("good boy", snake_ladder);
-				if (snake_ladder) {
-					const start = snake_ladder.start;
-					const end = snake_ladder.end;
-					// if(increment !== 'ladder')
+		if(steps > 0){
+			setTimeout(async () => {
+				console.log("movement happening");
+				function change_user_state(movement_axis:'x' | 'y',movement_point:number, increment_param?:'left' | 'right' ){
 					setUsers((users) => ({
 						...users,
-						a: {
-							...users?.a,
-							steps:
-								whichOne === "ladder"
-									? end - start
-									: start - end,
-							progress:
-								whichOne !== "ladder"
-									? "backward"
-									: "forward",
-							intensity: "speedy",
-							increment:
-								whichOne !== "ladder"
-									? increment === "left"
-										? "right"
-										: increment ===
-										  "right"
-										? "left"
-										: increment
-									: increment,
+						[user]: {
+							...users?.[user],
+							movement: {
+								...movement,
+								[movement_axis]: movement_point,
+							},
+							increment: increment_param || increment,
 						},
 					}));
 				}
-			}
 
-			if (steps === 0 && intensity !== "normal") {
-				console.log("why??");
-			}
+				if (
+					x_axis === 5 &&
+					increment === "left" &&
+					progress === "forward"
+				) {
+					console.log("x:5,left,forward");
+					change_user_state('y', y_axis + 10, 'right')
+					// setUsers((users) => ({
+					// 	...users,
+					// 	[user]: {
+					// 		...users?.[user],
+					// 		movement: {
+					// 			...movement,
+					// 			y: y_axis + 10,
+					// 		},
+					// 		increment: "right",
+					// 	},
+					// }));
+				} else if (
+					x_axis === 95 &&
+					increment === "right" &&
+					progress === "forward"
+				) {
+					console.log("x:105,right,forward");
+					change_user_state('y', y_axis+10, 'left')
+					// setUsers((users) => ({
+					// 	...users,
+					// 	[user]: {
+					// 		...users?.[user],
+					// 		movement: {
+					// 			...movement,
+					// 			y: y_axis + 10,
+					// 		},
+					// 		increment: "left",
+					// 	},
+					// }));
+				} else if (
+					x_axis === 95 &&
+					increment === "right" &&
+					progress === "backward"
+				) {
+					console.log("x:105,right,backward");
+					change_user_state('y', y_axis - 10, 'left')
+					// setUsers((users) => ({
+					// 	...users,
+					// 	[user]: {
+					// 		...users?.[user],
+					// 		movement: {
+					// 			...movement,
+					// 			y: y_axis - 10,
+					// 		},
+					// 		increment: "left",
+					// 	},
+					// }));
+				} else if (
+					x_axis === 5 &&
+					increment === "left" &&
+					progress === "backward"
+				) {
+					console.log("x:5,left,backward");
+					change_user_state('y', y_axis - 10, 'right')
+					// setUsers((users) => ({
+					// 	...users,
+					// 	[user]: {
+					// 		...users?.[user],
+					// 		movement: {
+					// 			...movement,
+					// 			y: y_axis - 10,
+					// 		},
+					// 		increment: "right",
+					// 	},
+					// }));
+				} else {
+					// console.log('normal condition')
+					const x_axis_based_on_increment = increment === "left" ? x_axis - 10 : x_axis + 10
+					change_user_state('x', x_axis_based_on_increment,)
+					// setUsers((users) => ({
+					// 	...users,
+					// 	[user]: {
+					// 		...users?.[user],
+					// 		movement: {
+					// 			...movement,
+					// 			x:
+					// 				increment === "left"
+					// 					? x_axis - 10
+					// 					: x_axis + 10,
+					// 		},
+							// increment: 'right'
+					// 	},
+					// }));
+				}
+				
+				function snake_ladder(
+					snakeOrLadder: { start: number; end: number }[],
+					whichOne: string
+				) {
+					let Did_stumple_upon_snake_ladder = false;
+					const snake_ladder = snakeOrLadder.find(
+						(obj) => obj.start === total + 1
+					);
+					console.log("good boy", snake_ladder);
+					if (snake_ladder) {
+						Did_stumple_upon_snake_ladder = true;
+						const start = snake_ladder.start;
+						const end = snake_ladder.end;
+						setUsers((users) => ({
+							...users,
+							[user]: {
+								...users?.[user],
+								steps:
+									whichOne === "ladder"
+										? end - start
+										: start - end,
+								progress:
+									whichOne !== "ladder"
+										? "backward"
+										: "forward",
+								intensity: "speedy",
+								increment:
+									whichOne !== "ladder"
+										? increment === "left"
+											? "right"
+											: increment ===
+											  "right"
+											? "left"
+											: increment
+										: increment,
+							},
+						}));
+					}
+					return Did_stumple_upon_snake_ladder;
+				}
+	
+				// Some functionalities that we have to make sure of at the end of complete rotation of user chance.
+				if(steps -1 == 0){
+					setUsers((users) => ({
+								...users,
+								[user]: {
+									...users?.[user],
+									intensity: "normal",
+									progress: "forward",
+									increment:
+										progress === "backward"
+											? increment === "left"
+												? "right"
+												: increment === "right"
+												? "left"
+												: increment
+											: increment,
+								},
+					})); 
+					const snake = snake_ladder(snakeArr, "snake");
+					const ladder = snake_ladder(ladderArr, "ladder");
 
-			setUsers((users) => ({
-				...users,
-				a: {
-					...users?.a,
-					steps: steps - 1,
-					total:
-						progress === "forward"
-							? total + 1
-							: total - 1,
-				},
-			}));
+					// If this is the last movement of A's piece, we change the turn.
+					if(!snake && !ladder && user == 'a'){
+						const updates:Record<string, boolean> = {};
+						updates[`/players/${user_id}/turn`] = false;
+						updates[`/players/${opponent_id}/turn`] = true;
+						try{
+							await update(ref(database), updates);
+							console.log('tables turned successfully')
+						}catch(error){
+							console.log(error)
+						}
+						setmovesProgress('end')
+					}
+				}
 
-			if (intensity === "normal" && steps - 1 === 0) {
-				snake_ladder(snakeArr, "snake");
-				snake_ladder(ladderArr, "ladder");
-			}
+				// At every iteration reduce the steps as they are the sole reason of iteration and also maintain total after every iteration.
+				setUsers((users) => ({
+					...users,
+					[user]: {
+						...users?.[user],
+						steps: steps - 1,
+						total:
+							progress === "forward"
+								? total + 1
+								: total - 1,
+					},
+				}));
 
-			if (total + 1 === 100) console.log("A won");
-			setGameProgress("end");
-			// socket.emit('message', total)
-		}, timeOut);
+
+				if (total + 1 === 100) console.log("A won");
+			}, timeOut);
+		}
 
 		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [users?.a.steps]);
+	}, [users?.[user].steps]);
 
-	useEffect(() => {
-		if (!id || !gameId) return;
 
-		const userRef = ref(database, `users/${gameId}/${id}`);
-		if (gameProgress === "end") {
-			update(userRef, {
-				increment: users.a.increment,
-				progress: users.a.progress,
-				steps: users.a.steps,
-				intensity: users.a.intensity,
-				total: users.a.total,
-				turn: users.a.steps === 0 ? false : true,
-				movement: {
-					x: users.a.movement.x,
-					y: users.a.movement.y,
-				},
-			})
-				.then(() =>
-					console.log("User data updated successfully!")
-				)
-				.catch((error) =>
-					console.error("Error updating user data:", error)
-				);
-		}
-	}, [
-		gameId,
-		gameProgress,
-		id,
-		users.a.increment,
-		users.a.intensity,
-		users.a.movement.x,
-		users.a.movement.y,
-		users.a.progress,
-		users.a.steps,
-		users.a.total,
-	]);
+	// This function is reponsible for updating the turn state only when opponent/user has completed his moves and we have turn state stored in temp_hold_of_turn_changes_in_middle_of_game state variable.
+	useEffect(()=>{
+		console.log('2nd-> checking movesProgress')
+		if(movesProgress == 'end')setTurn(temp_hold_of_turn_changes_in_middle_of_game);
+	},[temp_hold_of_turn_changes_in_middle_of_game, movesProgress])
 
-	useEffect(() => {
-		if (!id || !gameId) return;
-
-		const userRef = ref(
-			database,
-			`users/${gameId}/${
-				id === "firstKey" ? "secondKey" : "firstKey"
-			}`
-		);
-		if (turn && !users.a.steps && gameProgress === "end") {
-			console.log("how could you 2nd");
-			update(userRef, {
-				turn: true,
-			})
-				.then(() =>
-					console.log("User data updated successfully!")
-				)
-				.catch((error) =>
-					console.error("Error updating user data:", error)
-				);
-		}
-	}, [gameId, gameProgress, id, turn, users.a.steps]);
+	async function roll_dice(){
+		const count = Math.floor(Math.random() * 6) + 1;
+		setUsers((users) => ({
+			...users,
+			a: {
+				...users?.a,
+				points: count,
+				steps: count,
+			},
+		}));
+		const updates:Record<string, string | number> = {};
+		updates['/timestamp'] = Timestamp.now().seconds;
+		updates['/steps'] = count;
+		setmovesProgress('start')
+		try{await update(ref(database, `/players/${user_id}`),updates); console.log('1st->updated success after ROLL')}catch(error){console.error(error)}
+	}
 	return (
 		<>
 			<div className="h-screen flex p-5 justify-evenly">
@@ -381,33 +366,14 @@ export default function SnakeAndLadder() {
 					points={users.a.points}
 					player={"a"}
 				/>
-				{/* <div className="self-center text-center">
-
-					<div className="text-[40px]">Player A </div>
-					<div
-						className={`text-[340px] ${
-							turn === true
-								? "text-pink-500"
-								: "text-gray-500"
-						}`}
-					>
-						{users.a.points}{" "}
-					</div>
-				</div> */}
 				<div className="relative">
 					<Image
 						alt="img"
 						width={1000}
 						height={1000}
 						className="w-auto h-full"
-						src="https://th.bing.com/th/id/R.9815f360000e51b5fac089785b9616d5?rik=DVXP6lUTMK5JdQ&riu=http%3a%2f%2fst.depositphotos.com%2f1508955%2f4164%2fv%2f950%2fdepositphotos_41642213-stock-illustration-snakes-and-ladders-board-game.jpg&ehk=jPO0gAvEj6KjCZ0ZRist3DajdSdpkJduRczu86%2fyU4U%3d&risl=&pid=ImgRaw&r=0"
+						src={img}
 					></Image>
-					{/* <div className="top-0 absolute grid grid-cols-10 grid-rows-10 w-full h-full">
-						{[...Array(100)].map((_, index) => (
-							<div
-								key={index}
-								className=" grid place-items-center "
-							> */}
 
 					<Pieces
 						x_axis={users?.a.movement.x}
@@ -451,35 +417,11 @@ export default function SnakeAndLadder() {
 					points={users.b.points}
 					player={"b"}
 				/>
-				{/* <div className="self-center text-center">
-					<div className="text-[40px]">Player B </div>
-					<div
-						className={`text-[340px] ${
-							turn === false
-								? "text-blue-500"
-								: "text-gray-500"
-						}`}
-					>
-						{users.b.points}{" "}
-					</div>
-				</div> */}
-				{/* <p>Current Turn: {isUserATurn ? "User A" : "User B"}</p> */}
 			</div>
 			<button
 				disabled={!turn}
 				className="mt-4 px-6 py-2 bg-blue-500 text-white rounded"
-				onClick={() => {
-					// setTurn(!turn);
-					const count = Math.floor(Math.random() * 6) + 1;
-					setUsers((users) => ({
-						...users,
-						a: {
-							...users?.a,
-							points: count,
-							steps: count,
-						},
-					}));
-				}}
+				onClick={roll_dice}
 			>
 				Roll Dice
 			</button>
