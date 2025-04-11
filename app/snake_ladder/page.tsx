@@ -1,10 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
-// import R from "../R.jpeg"\
-// import { io } from "socket.io-client";
 import Image from "next/image";
-// import { io } from "socket.io-client";
-// import writeUserData from "../components/writeUserData";
 import { child, get, onValue, ref, update } from "firebase/database";
 import database from "@/database/firebase";
 import { PointDisplay, Pieces } from "../components/pieces";
@@ -13,15 +9,11 @@ import { Timestamp } from "firebase/firestore";
 
 export default function SnakeAndLadder() {
 	const [user, setUser] = useState<"a" | "b">("a");
-	// const [turn, setTurn] = useState(false);
-	// const [movesProgress, setmovesProgress] = useState("end");
 	const user_id = localStorage.getItem('user_id') || '';
 	const opponent_id = localStorage.getItem('opponent_id') || '';
 	const [opening_design, setOpening_design] = useState<{bottom:string, left:string, opacity:number}[]>([]);
 	const [overview_done, setOverview_done] = useState(false);
 	const [opening_design_count, setOpening_design_count] = useState(0);
-	// const [a_moves, set_a_moves] = useState<number[]>([]);
-	// const [b_moves, set_b_moves] = useState<number[]>([]);
 	const snakeArr = [
 		{ start: 17, end: 7 },
 		{ start: 62, end: 19 },
@@ -87,7 +79,7 @@ export default function SnakeAndLadder() {
 			}
 		}
 		getTurn();
-	},[])
+	},[user_id])
 
 	function turn(current_user:string){
 		setUser(current_user == "a" ? "b" : "a");
@@ -96,7 +88,6 @@ export default function SnakeAndLadder() {
 	// Updating opponent moves in the UI by fetching the latest data from backend
 	useEffect(()=>{
 		onValue(ref(database, `/players/${opponent_id}`), (snapshot)=>{
-			// console.log("haven't updated yet, turn:-" + turn + "user:-" + user)
 			// This function won't run when user is A because Turn would be true at that time.
 			if(snapshot.exists() && user == 'b' && snapshot.val().steps > 0){
 				console.log("opponent moves" ,snapshot.val().steps)
@@ -217,11 +208,8 @@ export default function SnakeAndLadder() {
 			}, timeOut);
 		}
 
+	// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [users[user]?.steps]);
-
-	// console.log("A's turn complete:-turn-> " +turn)
-
-
 
 	async function roll_dice(){
 		const count = Math.floor(Math.random() * 6) + 1;
