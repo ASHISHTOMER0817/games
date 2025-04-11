@@ -22,7 +22,7 @@ export const Pieces = ({
 	);
 };
 
-export function PointDisplay({turn, points, player, moves}:{ turn:boolean, points:number, player:string, moves:number[]}) {
+export function PointDisplay({player, moves}:{ turn:boolean, points:number, player:string, moves:number[]}) {
 	return (
 		<div className="self-center text-center">
 			<div className="text-[40px]">Player {player === 'a' ? 'A':'B'} </div>
@@ -33,13 +33,6 @@ export function PointDisplay({turn, points, player, moves}:{ turn:boolean, point
 					return <div key={index}>{index}. moved{" "}{move}{" "}steps</div>
 				})}
 			</div>
-			{/* <div
-				className={`text-[340px] ${
-					player == "a" && turn ? "text-pink-500": "text-gray-500" 
-				} ${player == "b" && turn ? "text-pink-500" : "text-gray-500"}`}
-			>
-				{points}{" "}
-			</div> */}
 		</div>
 	);
 }

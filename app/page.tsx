@@ -3,11 +3,7 @@
 import { useRouter } from "next/navigation";
 import {
 	ref,
-	// query,
-	// orderByChild,
-	// equalTo,
 	get,
-	// set,
 	onValue,
 	push,
 	child,
@@ -77,24 +73,6 @@ export default function Home() {
 		}
 	};
 
-	// Listen for changes in current player in players object;
-	// useEffect(() => {
-	// 	if(player_key == "")return;
-	// 	console.log('it is running')
-	// 	const unsubscribe = onValue(ref(database, `/players/${player_key}`), (snapshot) => {
-	// 		console.log('outside' + player_key)
-	// 		if (snapshot.exists() && snapshot.val().opponent !== 'null') {
-	// 			console.log('inside' + player_key)
-	// 			setSuspense(false);
-	// 			localStorage.setItem('user_id',player_key || '')
-	// 			localStorage.setItem('opponent_id',snapshot.val().opponent || '')
-	// 			router.push(games[1].url);
-	// 		}
-	// 	});
-	// 	return () => unsubscribe(); // Cleanup the listener when component unmounts
-	// }, [games, player_key, router]);
-
-
 	useEffect(() => {
 		if (!player_key) return; // Skip if no player_key
 	    
@@ -117,6 +95,7 @@ export default function Home() {
 		});
 	    
 		return () => unsubscribe(); // Cleanup on unmount
+	    // eslint-disable-next-line react-hooks/exhaustive-deps
 	    }, [player_key]); // Re-run if player_key changes
 
 	// Search Opponent for tic-tac-toe game
