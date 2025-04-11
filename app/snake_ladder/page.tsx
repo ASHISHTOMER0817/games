@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import Image from "next/image";
 // import { io } from "socket.io-client";
 // import writeUserData from "../components/writeUserData";
-import { onValue, ref, update } from "firebase/database";
+import { child, get, onValue, ref, update } from "firebase/database";
 import database from "@/database/firebase";
 import { PointDisplay, Pieces } from "../components/pieces";
 import {img} from "../lib/variables";
@@ -13,16 +13,15 @@ import { Timestamp } from "firebase/firestore";
 
 export default function SnakeAndLadder() {
 	const [user, setUser] = useState<"a" | "b">("a");
-	const [turn, setTurn] = useState<boolean>(false);
-	const [movesProgress, setmovesProgress] = useState("end");
-	const [user_id, setUserId] = useState('')
-	const [opponent_id, setOpponent_id] = useState('')
-	const [temp_hold_of_turn_changes_in_middle_of_game, setTemp_hold_of_turn_changes_in_middle_of_game] = useState(false)
-	useEffect(()=>{
-		setUserId(localStorage.getItem('user_id') || '')
-		setOpponent_id(localStorage.getItem('opponent_id') || '')
-	},[])
-
+	// const [turn, setTurn] = useState(false);
+	// const [movesProgress, setmovesProgress] = useState("end");
+	const user_id = localStorage.getItem('user_id') || '';
+	const opponent_id = localStorage.getItem('opponent_id') || '';
+	const [opening_design, setOpening_design] = useState<{bottom:string, left:string, opacity:number}[]>([]);
+	const [overview_done, setOverview_done] = useState(false);
+	const [opening_design_count, setOpening_design_count] = useState(0);
+	// const [a_moves, set_a_moves] = useState<number[]>([]);
+	// const [b_moves, set_b_moves] = useState<number[]>([]);
 	const snakeArr = [
 		{ start: 17, end: 7 },
 		{ start: 62, end: 19 },
@@ -46,6 +45,7 @@ export default function SnakeAndLadder() {
 
 	const [users, setUsers] = useState({
 		a: {
+			user:'a',
 			movement: { x: -5, y: 0 },
 			points: 0,
 			steps: 0,
@@ -53,8 +53,10 @@ export default function SnakeAndLadder() {
 			total: 0,
 			progress: "forward",
 			intensity: "normal",
+			all_moves:[],
 		},
 		b: {
+			user:'b',
 			movement: { x: -5, y: 0 },
 			points: 0,
 			steps: 0,
@@ -62,288 +64,168 @@ export default function SnakeAndLadder() {
 			total: 0,
 			progress: "forward",
 			intensity: "normal",
+			all_moves:[],
 		},
 	});
 
-
-	// Check user's turn and toggle based on it
-	useEffect(() => {
-		onValue(ref(database, `players/${user_id}`), (snapshot) => {
-			if (snapshot.exists() && snapshot.val().turn == true) {
-				console.log('1st-> check turn')
-				setTemp_hold_of_turn_changes_in_middle_of_game(snapshot.val().turn);
-				setUser('a');
+	useEffect(()=>{
+		const dbRef = ref(database);
+		// console.log(user_id)
+		async function getTurn(){
+			try{
+				await get(child(dbRef,`/players/${user_id}`)).then((snapshot)=>{
+					// if(!isMounted) return;
+					if(snapshot.exists() && snapshot.val()){
+						console.log(snapshot.val())
+						const turn_val = snapshot.val()?.turn; // Fallback
+						console.log('Turn check:', turn_val);
+						setUser(turn_val? "a":"b");
+					}
+				})
+			}catch(error){
+				console.error(error)
 			}
-		});
-	},[user_id]);
+		}
+		getTurn();
+	},[])
 
+	function turn(current_user:string){
+		setUser(current_user == "a" ? "b" : "a");
+	}
+	
 	// Updating opponent moves in the UI by fetching the latest data from backend
 	useEffect(()=>{
 		onValue(ref(database, `/players/${opponent_id}`), (snapshot)=>{
-			if(snapshot.exists() && !turn && snapshot.val().steps > 0){
-				const prgrs_or_intens = snapshot.val().progressOrIntensity
-				let intensity, progress;
-				
-				switch(prgrs_or_intens){
-					case 'jump_forward':
-						intensity = 'fast';
-						progress = 'forward';
-					 	break;
-					case 'jump_backward':
-						intensity = 'fast';
-						progress = 'backward';
-						break;
-					default: break;
-				}
-
-				// We are seeting B as user because it is B's turn
-				setUser("b");
+			// console.log("haven't updated yet, turn:-" + turn + "user:-" + user)
+			// This function won't run when user is A because Turn would be true at that time.
+			if(snapshot.exists() && user == 'b' && snapshot.val().steps > 0){
+				console.log("opponent moves" ,snapshot.val().steps)
 
 				// We are getting progress report of B
-				setUsers({
+				setUsers((users)=>({
 					...users,
 					b:{
 						...users.b,
 						steps:snapshot.val().steps,
-						intensity:intensity || users.b.intensity,
-						progress: progress || users.b.progress
 					}
-				})
+				}))
+
+				try{
+					update(ref(database, `/players/${opponent_id}`), {['steps']:0})
+				}catch(error){console.error(error)}
+				// After fetching the latest data set it to  
 				console.log('1st->OPPONENT_CONSOLE:-change in opponent')
-				
 			}
 		})
-	},[opponent_id, turn, users])
+	},[opponent_id,user])
 
 	useEffect(() => {
 		// console.log('3rd-> checking the biggest one')
+
 		// Creating interface-like variables to not right common keywords again.
-		const increment = users?.[user].increment;
-		const progress = users?.[user].progress;
-		const steps = users?.[user].steps;
-		const intensity = users?.[user].intensity;
-		const total = users?.[user].total;
-		const x_axis = users?.[user].movement.x;
-		const y_axis = users?.[user].movement.y;
-		const movement = users?.[user].movement;
+		let increment = users?.[user].increment;
+		let progress = users?.[user].progress;
+		let steps = users?.[user].steps;
+		let intensity = users?.[user].intensity;
+		let total = users?.[user].total;
+		let x_axis = users?.[user].movement.x;
+		let y_axis = users?.[user].movement.y;
 		const timeOut = intensity === "normal" ? 300 : 0;
 
 		if(steps > 0){
 			setTimeout(async () => {
-				console.log("movement happening");
-				function change_user_state(movement_axis:'x' | 'y',movement_point:number, increment_param?:'left' | 'right' ){
-					setUsers((users) => ({
-						...users,
-						[user]: {
-							...users?.[user],
-							movement: {
-								...movement,
-								[movement_axis]: movement_point,
-							},
-							increment: increment_param || increment,
-						},
-					}));
-				}
+				// console.log("movement happening");
 
-				if (
-					x_axis === 5 &&
-					increment === "left" &&
-					progress === "forward"
-				) {
-					console.log("x:5,left,forward");
-					change_user_state('y', y_axis + 10, 'right')
-					// setUsers((users) => ({
-					// 	...users,
-					// 	[user]: {
-					// 		...users?.[user],
-					// 		movement: {
-					// 			...movement,
-					// 			y: y_axis + 10,
-					// 		},
-					// 		increment: "right",
-					// 	},
-					// }));
-				} else if (
-					x_axis === 95 &&
-					increment === "right" &&
-					progress === "forward"
-				) {
-					console.log("x:105,right,forward");
-					change_user_state('y', y_axis+10, 'left')
-					// setUsers((users) => ({
-					// 	...users,
-					// 	[user]: {
-					// 		...users?.[user],
-					// 		movement: {
-					// 			...movement,
-					// 			y: y_axis + 10,
-					// 		},
-					// 		increment: "left",
-					// 	},
-					// }));
-				} else if (
-					x_axis === 95 &&
-					increment === "right" &&
-					progress === "backward"
-				) {
-					console.log("x:105,right,backward");
-					change_user_state('y', y_axis - 10, 'left')
-					// setUsers((users) => ({
-					// 	...users,
-					// 	[user]: {
-					// 		...users?.[user],
-					// 		movement: {
-					// 			...movement,
-					// 			y: y_axis - 10,
-					// 		},
-					// 		increment: "left",
-					// 	},
-					// }));
-				} else if (
-					x_axis === 5 &&
-					increment === "left" &&
-					progress === "backward"
-				) {
-					console.log("x:5,left,backward");
-					change_user_state('y', y_axis - 10, 'right')
-					// setUsers((users) => ({
-					// 	...users,
-					// 	[user]: {
-					// 		...users?.[user],
-					// 		movement: {
-					// 			...movement,
-					// 			y: y_axis - 10,
-					// 		},
-					// 		increment: "right",
-					// 	},
-					// }));
-				} else {
-					// console.log('normal condition')
-					const x_axis_based_on_increment = increment === "left" ? x_axis - 10 : x_axis + 10
-					change_user_state('x', x_axis_based_on_increment,)
-					// setUsers((users) => ({
-					// 	...users,
-					// 	[user]: {
-					// 		...users?.[user],
-					// 		movement: {
-					// 			...movement,
-					// 			x:
-					// 				increment === "left"
-					// 					? x_axis - 10
-					// 					: x_axis + 10,
-					// 		},
-							// increment: 'right'
-					// 	},
-					// }));
-				}
+				if ( x_axis === 5 && increment === "left" && progress === "forward") {
+					y_axis += 10;
+					increment = 'right';
+
+				} else if ( x_axis === 95 && increment === "right" && progress === "forward") {
+					y_axis+= 10;
+					increment = "left";
+
+				} else if ( x_axis === 95 && increment === "right" && progress === "backward") {
+					y_axis-= 10;
+					increment = "left";
+
+				} else if ( x_axis === 5 && increment === "left" && progress === "backward") {
+					 y_axis-= 10;
+					  increment = "right";
+
+				} else {; x_axis +=increment === "left" ? -10 : 10; }
 				
-				function snake_ladder(
-					snakeOrLadder: { start: number; end: number }[],
-					whichOne: string
-				) {
+				function snake_ladder( snakeOrLadder: { start: number; end: number }[], whichOne: string ){
 					let Did_stumple_upon_snake_ladder = false;
 					const snake_ladder = snakeOrLadder.find(
-						(obj) => obj.start === total + 1
+						(obj) => obj.start === total
 					);
-					console.log("good boy", snake_ladder);
+					// console.log("good boy", snake_ladder);
 					if (snake_ladder) {
 						Did_stumple_upon_snake_ladder = true;
 						const start = snake_ladder.start;
 						const end = snake_ladder.end;
-						setUsers((users) => ({
-							...users,
-							[user]: {
-								...users?.[user],
-								steps:
-									whichOne === "ladder"
-										? end - start
-										: start - end,
-								progress:
-									whichOne !== "ladder"
-										? "backward"
-										: "forward",
-								intensity: "speedy",
-								increment:
-									whichOne !== "ladder"
-										? increment === "left"
-											? "right"
-											: increment ===
-											  "right"
-											? "left"
-											: increment
-										: increment,
-							},
-						}));
+
+						steps+= whichOne === "ladder" ? end - start : start - end;
+						progress = whichOne !== "ladder" ? "backward" : "forward";
+						intensity = "speedy";
+						increment = whichOne !== "ladder" ? increment === "left" ? "right" : increment === "right" ? "left" : increment : increment
 					}
 					return Did_stumple_upon_snake_ladder;
 				}
-	
+
+				steps-= 1;  // Reduce steps at every iteration 
+				total += progress === "forward"? +1 : -1  // Increase/decrease total on the basis of progress 
+
 				// Some functionalities that we have to make sure of at the end of complete rotation of user chance.
-				if(steps -1 == 0){
-					setUsers((users) => ({
-								...users,
-								[user]: {
-									...users?.[user],
-									intensity: "normal",
-									progress: "forward",
-									increment:
-										progress === "backward"
-											? increment === "left"
-												? "right"
-												: increment === "right"
-												? "left"
-												: increment
-											: increment,
-								},
-					})); 
+				if(steps === 0){
+
+					// Bring the movement back to normal
+					intensity = "normal";
+					increment = progress == "backward" ? increment == "left" ? "right" : "left": increment; //Wrote increment before progress because increment depends upon it
+					progress = "forward";
+
 					const snake = snake_ladder(snakeArr, "snake");
 					const ladder = snake_ladder(ladderArr, "ladder");
 
-					// If this is the last movement of A's piece, we change the turn.
-					if(!snake && !ladder && user == 'a'){
-						const updates:Record<string, boolean> = {};
-						updates[`/players/${user_id}/turn`] = false;
-						updates[`/players/${opponent_id}/turn`] = true;
-						try{
-							await update(ref(database), updates);
-							console.log('tables turned successfully')
-						}catch(error){
-							console.log(error)
-						}
-						setmovesProgress('end')
+					// Turn of opponent came
+					if(!snake && !ladder){
+						// setTurn(!turn);
+						turn(user)
+						console.log('opponent turn came')
 					}
 				}
 
-				// At every iteration reduce the steps as they are the sole reason of iteration and also maintain total after every iteration.
+				// At the end of useEffect update the state of the user/opponent
 				setUsers((users) => ({
 					...users,
 					[user]: {
-						...users?.[user],
-						steps: steps - 1,
-						total:
-							progress === "forward"
-								? total + 1
-								: total - 1,
+						...users[user],
+						increment:increment,
+						progress:progress,
+						intensity:intensity,
+						movement:{
+							x:x_axis,
+							y:y_axis
+						},
+						steps: steps,
+						total: total
 					},
 				}));
 
-
-				if (total + 1 === 100) console.log("A won");
+				// Testing purpose
+				console.log(`user ${user} needs to take ${users[user].steps} more` )
 			}, timeOut);
 		}
 
-		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [users?.[user].steps]);
+	}, [users[user]?.steps]);
+
+	// console.log("A's turn complete:-turn-> " +turn)
 
 
-	// This function is reponsible for updating the turn state only when opponent/user has completed his moves and we have turn state stored in temp_hold_of_turn_changes_in_middle_of_game state variable.
-	useEffect(()=>{
-		console.log('2nd-> checking movesProgress')
-		if(movesProgress == 'end')setTurn(temp_hold_of_turn_changes_in_middle_of_game);
-	},[temp_hold_of_turn_changes_in_middle_of_game, movesProgress])
 
 	async function roll_dice(){
 		const count = Math.floor(Math.random() * 6) + 1;
+
 		setUsers((users) => ({
 			...users,
 			a: {
@@ -352,19 +234,53 @@ export default function SnakeAndLadder() {
 				steps: count,
 			},
 		}));
+
+		// Adding steps to the user's steps arr
+		setUsers((users)=>({
+			...users,
+			[user]:{
+				...users[user],
+				all_moves:[...users[user].all_moves, count]
+			}
+		}))
+
+		// Sending steps to backend
 		const updates:Record<string, string | number> = {};
 		updates['/timestamp'] = Timestamp.now().seconds;
 		updates['/steps'] = count;
-		setmovesProgress('start')
 		try{await update(ref(database, `/players/${user_id}`),updates); console.log('1st->updated success after ROLL')}catch(error){console.error(error)}
 	}
+
+	useEffect(()=>{
+		if(!overview_done){
+		const overview_arr = [];
+		let squares = 0;
+		for(let i = 0;i< 100;i+=10){
+			// Increase bottom by 10;
+			for(let j = 0;j< 100;j+=10){
+				//  Increase left by 10
+				overview_arr[squares] = {bottom:`${i}%`, left:`${j}%`, opacity:1}
+				squares++;
+			}
+		}
+		setOpening_design([...overview_arr])
+		setOverview_done(true);
+		}else if(opening_design_count < 100 && overview_done) {setTimeout(()=>{
+			opening_design[opening_design_count].opacity = 0;
+			setOpening_design_count(opening_design_count+1);
+		},15)}
+	}, [opening_design, opening_design_count, overview_done])
+
+
+	console.log('this is turn',turn)
 	return (
 		<>
 			<div className="h-screen flex p-5 justify-evenly">
 				<PointDisplay
-					turn={turn}
+					turn={user == "a"?true:false}
 					points={users.a.points}
 					player={"a"}
+					moves= {users.a.all_moves}
 				/>
 				<div className="relative">
 					<Image
@@ -374,6 +290,10 @@ export default function SnakeAndLadder() {
 						className="w-auto h-full"
 						src={img}
 					></Image>
+
+					{opening_design.map(({bottom, left, opacity},index)=>{
+						return <div key={index} style={{bottom:bottom, left:left, opacity:opacity}} className={`opacity w-[10%] h-[10%] bg-black absolute`}></div>
+					})}
 
 					<Pieces
 						x_axis={users?.a.movement.x}
@@ -413,13 +333,14 @@ export default function SnakeAndLadder() {
 				</div>
 
 				<PointDisplay
-					turn={turn}
+					turn={user == "a"?true:false}
 					points={users.b.points}
 					player={"b"}
+					moves= {users.a.all_moves}
 				/>
 			</div>
 			<button
-				disabled={!turn}
+				disabled={user == 'b'}
 				className="mt-4 px-6 py-2 bg-blue-500 text-white rounded"
 				onClick={roll_dice}
 			>

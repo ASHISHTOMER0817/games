@@ -45,7 +45,7 @@ export default function Home() {
 					updates["/unmatched_player"] = key;
 					updates["/players/" + key] = {
 						steps: 0,
-						progressOrIntensity: "normal",
+						// progressOrIntensity: "normal",
 						turn: true,
 						timestamp: Timestamp.now().seconds,
 						opponent: 'null',
@@ -59,7 +59,7 @@ export default function Home() {
 					updates["/unmatched_player"] = "null"; // Reverse it back to null as we created a match
 					updates["/players/" + key] = {
 						steps: 0,
-						progressOrIntensity: "normal",
+						// progressOrIntensity: "normal",
 						turn: false,
 						timestamp: Timestamp.now().seconds,
 						opponent: unmatched_player_uid || '',

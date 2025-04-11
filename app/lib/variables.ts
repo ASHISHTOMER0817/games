@@ -3,7 +3,7 @@ export const img = "https://th.bing.com/th/id/R.9815f360000e51b5fac089785b9616d5
 // Interface of Player data
  export interface playerData{
       steps: number,
-      progressOrIntensity: string,
+      // progressOrIntensity: string,
       turn: boolean,
       timestamp: number | string,
       opponent: null | string | number,
