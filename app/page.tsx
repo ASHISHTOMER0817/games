@@ -1,5 +1,5 @@
 "use client";
-
+import Cookies from "js-cookie"
 import { useRouter } from "next/navigation";
 import {
 	ref,
@@ -63,8 +63,11 @@ export default function Home() {
 					update(ref(database), updates)
 
 					// Updating local storage with user and its opponent IDs.
-					localStorage.setItem('user_id',key || '')
-					localStorage.setItem('opponent_id',unmatched_player_uid || '')
+					Cookies.set("user_id", key || '', {expires: 7})
+					Cookies.set("opponent_id", unmatched_player_uid, {expires:7})
+	  
+					// localStorage.setItem('user_id',key || '')
+					// localStorage.setItem('opponent_id',unmatched_player_uid || '')
 					router.push(games[1].url)
 				}
 			});
@@ -85,12 +88,14 @@ export default function Home() {
 	    
 		  // Check if opponent exists and is not a "null" string
 		  if (snapshot.exists() && playerData?.opponent && playerData.opponent !== "null") {
-		    console.log('Opponent assigned:', playerData.opponent);
+		    	console.log('Opponent assigned:', playerData.opponent);
 		    
-		    setSuspense(false);
-		    localStorage.setItem('user_id', player_key);
-		    localStorage.setItem('opponent_id', playerData.opponent);
-		    router.push(games[1].url);
+		   	setSuspense(false);
+			Cookies.set("user_id", player_key, {expires: 7})
+		    	Cookies.set("opponent_id", playerData.opponent, {expires:7})
+			// localStorage.setItem('user_id', player_key);
+			// localStorage.setItem('opponent_id', playerData.opponent);
+		    	router.push(games[1].url);
 		  }
 		});
 	    

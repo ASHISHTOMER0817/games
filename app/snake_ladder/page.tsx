@@ -6,14 +6,15 @@ import database from "@/database/firebase";
 import { PointDisplay, Pieces } from "../components/pieces";
 import {img} from "../lib/variables";
 import { Timestamp } from "firebase/firestore";
+import Cookies from "js-cookie"
 
 export default function SnakeAndLadder() {
 	const [user, setUser] = useState<"a" | "b">("a");
-	const user_id = localStorage.getItem('user_id') || '';
-	const opponent_id = localStorage.getItem('opponent_id') || '';
 	const [opening_design, setOpening_design] = useState<{bottom:string, left:string, opacity:number}[]>([]);
 	const [overview_done, setOverview_done] = useState(false);
 	const [opening_design_count, setOpening_design_count] = useState(0);
+	const [user_id, setuser_id] = useState('')
+	const [opponent_id, setopponent_id] = useState('')
 	const snakeArr = [
 		{ start: 17, end: 7 },
 		{ start: 62, end: 19 },
@@ -30,7 +31,7 @@ export default function SnakeAndLadder() {
 		{ start: 9, end: 31 },
 		{ start: 21, end: 42 },
 		{ start: 51, end: 67 },
-		{ start: 26, end: 84 },
+		{ start: 28, end: 84 },
 		{ start: 72, end: 91 },
 		{ start: 80, end: 99 },
 	];
@@ -63,23 +64,28 @@ export default function SnakeAndLadder() {
 	useEffect(()=>{
 		const dbRef = ref(database);
 		// console.log(user_id)
-		async function getTurn(){
-			try{
-				await get(child(dbRef,`/players/${user_id}`)).then((snapshot)=>{
-					// if(!isMounted) return;
-					if(snapshot.exists() && snapshot.val()){
-						console.log(snapshot.val())
-						const turn_val = snapshot.val()?.turn; // Fallback
-						console.log('Turn check:', turn_val);
-						setUser(turn_val? "a":"b");
-					}
-				})
-			}catch(error){
-				console.error(error)
+
+			const user_id_temp =Cookies.get('user_id') || "";
+			setuser_id(user_id_temp)
+			setopponent_id(Cookies.get('opponent_id') || "")
+			async function getTurn(){
+				try{
+					await get(child(dbRef,`/players/${user_id_temp}`)).then((snapshot)=>{
+						// if(!isMounted) return;
+						if(snapshot.exists() && snapshot.val()){
+							console.log(snapshot.val())
+							const turn_val = snapshot.val()?.turn; // Fallback
+							console.log('Turn check:', turn_val);
+							setUser(turn_val? "a":"b");
+						}
+					})
+				}catch(error){
+					console.error(error)
+				}
 			}
-		}
-		getTurn();
-	},[user_id])
+			getTurn();
+		
+	},[])
 
 	function turn(current_user:string){
 		setUser(current_user == "a" ? "b" : "a");
@@ -202,10 +208,12 @@ export default function SnakeAndLadder() {
 						total: total
 					},
 				}));
-
 				// Testing purpose
 				console.log(`user ${user} needs to take ${users[user].steps} more` )
 			}, timeOut);
+			console.log(users[user])
+			if(total == 100 && user == "a"){console.log('you won')};
+			
 		}
 
 	// eslint-disable-next-line react-hooks/exhaustive-deps
